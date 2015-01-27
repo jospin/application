@@ -11,7 +11,12 @@ if (isset($_SERVER['REDIRECT_URL'])) {
     $redirect_url = explode('/',$_SERVER['REDIRECT_URL']);
 }
 //$redirect_url = explode('/',$_SERVER['REDIRECT_URL']);
-$load = Mvc\Load::getApp($redirect_url);
-// Passa para a classe Load que ira tratar o MÛdulo/Controller/Action e os par‚metros
+try{
+    $load = Mvc\Load::getApp($redirect_url);
+} catch(Mvc\ExceptionLoad $e) {
+    echo $e;
+    die();
+}
+// Passa para a classe Load que ira tratar o M√≥dulo/Controller/Action e os par√¢metros
 //echo '<pre>';
 //print_r($_SERVER);

@@ -11,51 +11,76 @@ namespace Lib\Mvc;
 */
 class Load{
 
-    public $_methods = array(
+    static private $_methods = array(
         'flow',
         );
     /**
     * Atributo para determinar o tipo de atuação que a controller atuará
     * @var string
     */
-    public $_http;
+    static public $_method;
 
     /**
     * Atributo para determinar o Módulo que será chamado
     * @var string
     */
-    private $_module;
+    static public $_module;
 
     /**
     * Atributo para determinar o Controller que será chamado
     * @var string
     */
-    private $_controller;
+    static public $_controller;
 
     /**
     * Atributo para determinar a Action chamada
     * @var string
     */
-    private $_action;
+    static public $_action;
 
     /**
     * Atributo para determinar os parâmetros do request
     * @var string
     */
-    private $_request;
+    static public $_request;
 
     static public function getApp(array $request)
     {
-        Load::_setHttp($request[1]);
+        Load::_setMethod($request[1]);
+        if (isset($request[2])) {
+            Load::_setModule($request[2]);
+        }
     }
 
-    static function _setHttp($method)
+    static private function _setMethod($method)
     {
 
-        if (is_array(strtolower($method), self::$_methods)) {
-            self::$_http = $method;
+        if (in_array(strtolower($method), self::$_methods)) {
+            self::$_method = $method;
         } else {
-            Throw New Exception('Erro no Método');
+            throw new ExceptionLoad('Método chamado não existe');
+        }
+    }
+
+    static private function _setModule($module)
+    {
+        if (is_string($module)) {
+            try{
+                Load::validaModule($module);
+                self::$_module = $module;
+            } catch(ExceptionLoad $e) {
+                echo $e;
+            }
+        } else {
+            throw new ExceptionLoad('Parâmetro passado como módulo não existe');
+        }
+    }
+
+    static private function validaModule($module)
+    {
+        $modulePath = dirname(__DIR__) . '/module/' . $module;
+        if (!is_dir($modulePath)) {
+            throw new ExceptionLoad('Módulo não existe nesta aplicação');
         }
     }
 
