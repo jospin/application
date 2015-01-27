@@ -1,8 +1,10 @@
 # application
 
 Após clonar:
-  - Faça composer install;
-  - Crie o vhost
+  - Rode o composer install;
+  - Ativar .htaccess
+  - Colocar no hosts
+  - Crie o vhost para acesso via url
 
 <VirtualHost *:80>
       ServerName application.localhost

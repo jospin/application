@@ -9,10 +9,12 @@ namespace Lib\Mvc;
 * @copyright 2015
 * @version 1.0
 */
-class Load{
+class Load {
 
     static private $_methods = array(
         'flow',
+        'form',
+        'iso'
         );
     /**
     * Atributo para determinar o tipo de atuação que a controller atuará
@@ -57,6 +59,12 @@ class Load{
     static private $_fileControler;
 
     /**
+    * Atributo para determinar a aplicação chamada
+    * @var string
+    */
+    static private $_enviroment;
+
+    /**
     * Método da classe load que monta qual controlle e action será acessada,
     * e qual o método de resposta utilizado
     * @author Lucien Jospin <lucien.carbonare@gmail.com>
@@ -69,14 +77,16 @@ class Load{
             Load::_getUrlList();
         }
 
+        // No looping caso tenhamos uma exception tentar buscar se não pode ser parâmetros de passagem antes de lançar a exceptio
+        // Pois podeser que o módulo seja o default. Entretanto o metodo deve ser um existente. flow, form, iso.
         foreach(self::$_url as $key=>$value) {
             switch ($key) {
                 case 0 : Load::_setMethod($value); break;
                 case 1 : Load::_setModule($value); break;
                 case 2 : Load::_setController($value); break;
                 case 3 : Load::_setAction($value); break;
+                default : Load::_addRequest($value);
             }
-
         }
         return true;
     }
@@ -105,7 +115,6 @@ class Load{
         // Explode a URL para pegar retirar tudo após o ?
         $urlTmp = explode("?", $request);
         $request = $urlTmp[ 0 ];
-
 
         // Explo a URL para pegar cada uma das partes da URL
         $urlExplodida = explode("/", $request);
@@ -214,7 +223,7 @@ class Load{
         if (!is_file(self::$_fileControler)) {
             throw new ExceptionLoad('Controller inexistente nesta aplicação');
         }
-        return true
+        return true;
     }
 
     /**
@@ -236,6 +245,7 @@ class Load{
         } else {
             throw new ExceptionLoad('Parâmetro passado como action não existe');
         }
+        return true;
     }
 
     /**
@@ -249,8 +259,9 @@ class Load{
     {
 
         if (!is_file($controllerPath)) {
-            throw new ExceptionLoad('Controller inexistente nesta aplicação');
+            throw new ExceptionLoad('Action inexistente no Controller: ' . self::$_controller);
         }
+        return true;
 
     }
 
