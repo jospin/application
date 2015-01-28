@@ -1,5 +1,6 @@
 <?php
 namespace Lib\Mvc;
+use Lib\Conf as Conf;
 
 /**
 * Classe que determina qual controller, de qual modulo chamar pelos parâmetros passados na URL
@@ -11,7 +12,7 @@ namespace Lib\Mvc;
 */
 class Load {
 
-    static private $_methods = array(
+    private static $_methods = array(
         'flow',
         'form',
         'iso'
@@ -20,49 +21,57 @@ class Load {
     * Atributo para determinar o tipo de atuação que a controller atuará
     * @var string
     */
-    static public $_method;
+    public static $_method;
 
     /**
     * Atributo que monta as pastas de parâmetros
     * @var string
     */
-    static private $_url = null;
+    private static $_url = null;
 
     /**
     * Atributo para determinar o Módulo que será chamado
     * @var string
     */
-    static public $_module;
+    public static $_module;
 
     /**
     * Atributo para determinar o Controller que será chamado
     * @var string
     */
-    static public $_controller;
+    public static $_controller;
 
     /**
     * Atributo para determinar a Action chamada
     * @var string
     */
-    static public $_action;
+    public static $_action;
 
     /**
     * Atributo para determinar os parâmetros do request
     * @var string
     */
-    static public $_request;
+    public static $_request;
 
     /**
     * Atributo para determinar o arquivo do controller
     * @var string
     */
-    static private $_fileControler;
+    private static $_fileControler;
 
     /**
     * Atributo para determinar a aplicação chamada
     * @var string
     */
-    static private $_enviroment;
+    private static $_enviroment;
+
+    /**
+    * Atributo para receber a configuração
+    * @var stdClass
+    */
+    private static $_mvcDefault;
+
+    private static $call = array('method','module','controller','action');
 
     /**
     * Método da classe load que monta qual controlle e action será acessada,
@@ -71,24 +80,62 @@ class Load {
     * @access public
     * @return boolean
     */
-    static public function getApp()
+    public static function getApp()
     {
         if (self::$_url === null) {
             Load::_getUrlList();
         }
 
+        self::$_mvcDefault = Conf\Load::getInstance()->getMvc();
+
         // No looping caso tenhamos uma exception tentar buscar se não pode ser parâmetros de passagem antes de lançar a exceptio
-        // Pois podeser que o módulo seja o default. Entretanto o metodo deve ser um existente. flow, form, iso.
-        foreach(self::$_url as $key=>$value) {
-            switch ($key) {
-                case 0 : Load::_setMethod($value); break;
-                case 1 : Load::_setModule($value); break;
-                case 2 : Load::_setController($value); break;
-                case 3 : Load::_setAction($value); break;
-                default : Load::_addRequest($value);
-            }
+        // Pois pode ser que o módulo seja o default.
+        $i = 0;
+        for($i = 0; $i <count(self::$_url); $i++) {
+            Load::_factory(self::$_url[$i]);
         }
-        return true;
+    }
+
+    public static function getMethod()
+    {
+        if (empty(self::$_method) && isset(self::$_mvcDefault->methoddefault)) {
+            self::$_method =  self::$_mvcDefault->methoddefault;
+        }
+        return self::$_method;
+    }
+
+    public static function getModule()
+    {
+        if (empty(self::$_module) && isset(self::$_mvcDefault->moduledefault)) {
+            self::$_module =  self::$_mvcDefault->moduledefault;
+        }
+        return self::$_module;
+    }
+
+    public static function getController()
+    {
+        if (empty(self::$_controller) && isset(self::$_mvcDefault->controllerdefault)) {
+            self::$_controller =  self::$_mvcDefault->controllerdefault;
+        }
+        return self::$_controller;
+    }
+
+    public static function getAction()
+    {
+        if (empty(self::$_action) && isset(self::$_mvcDefault->actiondefault)) {
+            self::$_action =  self::$_mvcDefault->actiondefault;
+        }
+        return self::$_action;
+    }
+
+    private static function _factory($value)
+    {
+        $val = self::$call[0];
+        $method = '_set' . ucfirst($val);
+        if (Load::{$method}($value)) {
+            array_shift(self::$call);
+            return true;
+        }
     }
 
     /**
@@ -97,7 +144,7 @@ class Load {
     * @return array
     * @access private
     */
-    static private function _getUrlList()
+    private static function _getUrlList()
     {
         global $_SERVER;
 
@@ -138,12 +185,16 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _setMethod($method)
+    private static function _setMethod($method)
     {
 
         if (in_array(strtolower($method), self::$_methods)) {
             self::$_method = $method;
         } else {
+            if (!empty(self::$_mvcDefault->method)) {
+                self::$_method = $method;
+                return true;
+            }
             throw new ExceptionLoad('Método chamado não existe');
         }
         return true;
@@ -156,7 +207,7 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _setModule($module)
+    private static function _setModule($module)
     {
         if (is_string($module)) {
             try{
@@ -177,7 +228,7 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _validaModule($module)
+    private static function _validaModule($module)
     {
         $modulePath = dirname(__DIR__) . '/module/' . $module;
         if (!is_dir($modulePath)) {
@@ -192,7 +243,7 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _setController($controller)
+    private static function _setController($controller)
     {
         if (is_string($controller)) {
             try{
@@ -214,7 +265,7 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _validaController($controller)
+    private static function _validaController($controller)
     {
         self::$_fileControler = dirname(__DIR__)
                             . '/'
@@ -233,7 +284,7 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _setAction($action)
+    private static function _setAction($action)
     {
         if (is_string($action)) {
             try{
@@ -255,10 +306,10 @@ class Load {
     * @return boolean
     * @access private
     */
-    static private function _validaAction($action)
+    private static function _validaAction($action)
     {
 
-        if (!is_file($controllerPath)) {
+        if (!is_file(self::$_fileControler)) {
             throw new ExceptionLoad('Action inexistente no Controller: ' . self::$_controller);
         }
         return true;
